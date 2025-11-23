@@ -1,0 +1,72 @@
+Language: Cpp
+DisableFormat: false
+BasedOnStyle: Google
+LineEnding: LF
+ColumnLimit: 120
+AccessModifierOffset: -1
+AlignAfterOpenBracket: BlockIndent
+AllowAllArgumentsOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
+BinPackArguments: false
+BinPackParameters: OnePerLine
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterClass: false
+  AfterControlStatement: Never
+  AfterEnum: false
+  AfterFunction: false
+  AfterNamespace: false
+  AfterStruct: false
+  AfterUnion: false
+  AfterExternBlock: false
+  BeforeCatch: false
+  BeforeElse: false
+  BeforeLambdaBody: false
+  BeforeWhile: false
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+BreakAfterAttributes: Never
+BreakConstructorInitializers: BeforeComma
+BreakFunctionDefinitionParameters: false
+BreakInheritanceList: BeforeComma
+BreakTemplateDeclarations: Yes
+ConstructorInitializerIndentWidth: 2
+ContinuationIndentWidth: 2
+DerivePointerAlignment: false
+IndentPPDirectives: BeforeHash
+IndentRequiresClause: false
+InsertBraces: true
+IntegerLiteralSeparator:
+  Binary: 8
+  Decimal: 3
+  DecimalMinDigits: 5
+  Hex: 2
+KeepEmptyLines:
+  AtEndOfFile: false
+  AtStartOfBlock: false
+  AtStartOfFile: false
+PenaltyBreakTemplateDeclaration: 9999
+PointerAlignment: Left
+ReferenceAlignment: Left
+RequiresClausePosition: OwnLine
+RequiresExpressionIndentation: OuterScope
+SpaceAfterCStyleCast: true
+SpaceAfterTemplateKeyword: false
+SpaceBeforeCaseColon: false
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+  AfterControlStatements: true
+  AfterForeachMacros: false
+  AfterFunctionDeclarationName: false
+  AfterFunctionDefinitionName: false
+  AfterIfMacros: false
+  AfterOverloadedOperator: false
+  AfterPlacementOperator: true
+  AfterRequiresInClause: true
+  AfterRequiresInExpression: false
+  BeforeNonEmptyParentheses: false
+SpaceInEmptyBlock: true
+WrapNamespaceBodyWithEmptyLines: Always
