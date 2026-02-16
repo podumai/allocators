@@ -80,13 +80,13 @@ class [[nodiscard]] FreeList {
 
   FreeList() noexcept = default;
 
-  FreeList(const FreeList&) = delete ("FreeList is move-only type");
+  FreeList(const FreeList&) = delete;
 
   FreeList(FreeList&& other) noexcept : free_blocks_{std::exchange(other.free_blocks_, nullptr)} { }
 
   ~FreeList() = default;
 
-  auto operator=(const FreeList&) -> FreeList& = delete ("FreeList is move-only type");
+  auto operator=(const FreeList&) -> FreeList& = delete;
 
   auto operator=(FreeList&& other) noexcept -> FreeList& {
     assert(this != &other);
