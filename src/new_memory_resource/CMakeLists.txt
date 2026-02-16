@@ -9,8 +9,3 @@ target_sources(
   PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/new_memory_resource.cpp"
 )
-set_target_properties(
-  NewMemoryResource
-  PROPERTIES
-  OUTPUT_NAME "new_memory_resource"
-)

@@ -9,8 +9,3 @@ target_sources(
   PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/null_memory_resource.cpp"
 )
-set_target_properties(
-  NullMemoryResource
-  PROPERTIES
-  OUTPUT_NAME "null_memory_resource"
-)
