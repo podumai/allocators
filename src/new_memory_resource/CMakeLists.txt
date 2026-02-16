@@ -1,4 +1,4 @@
-add_library(NewMemoryResource)
+add_library(NewMemoryResource STATIC)
 add_library(NewMemoryResource::NewMemoryResource ALIAS NewMemoryResource)
 target_sources(
   NewMemoryResource

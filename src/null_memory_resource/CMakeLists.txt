@@ -1,4 +1,4 @@
-add_library(NullMemoryResource)
+add_library(NullMemoryResource STATIC)
 add_library(NullMemoryResource::NullMemoryResource ALIAS NullMemoryResource)
 target_sources(
   NullMemoryResource

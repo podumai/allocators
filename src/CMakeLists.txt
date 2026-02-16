@@ -1,7 +1,7 @@
 add_subdirectory(new_memory_resource)
 add_subdirectory(null_memory_resource)
 
-add_library(LabMemory)
+add_library(LabMemory STATIC)
 add_library(LabMemory::LabMemory ALIAS LabMemory)
 target_sources(
   LabMemory
