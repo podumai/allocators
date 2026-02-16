@@ -29,11 +29,22 @@ auto PrintMap(const auto& map) -> void {
   }
 }
 
-constexpr std::array<int, 10> kFactorialValues{1, 1, 2, 6, 24, 120, 720, 5040, 40'320, 362'880};
+constexpr std::array<std::pair<int, int>, 10> kFactorialValues{
+  std::make_pair(0, 1),
+  std::make_pair(1, 1),
+  std::make_pair(2, 2),
+  std::make_pair(3, 6),
+  std::make_pair(4, 24),
+  std::make_pair(5, 120),
+  std::make_pair(6, 720),
+  std::make_pair(7, 5040),
+  std::make_pair(8, 40'320),
+  std::make_pair(9, 362'880)
+};
 
 auto GenerateMap(auto& map) -> void {
-  for (auto&& [index, value] : std::views::enumerate(kFactorialValues)) {
-    map.insert({std::forward<decltype(index)>(index), std::forward<decltype(value)>(value)});
+  for (auto [index, value] : kFactorialValues) {
+    map.insert({index, value});
   }
 }
 
@@ -75,8 +86,8 @@ auto PrintList(const auto& list) -> void {
 }
 
 auto GenerateList(auto& list) -> void {
-  for (auto&& value : kFactorialValues) {
-    list.PushFront(std::forward<decltype(value)>(value));
+  for (auto [index, value] : kFactorialValues) {
+    list.PushFront(value);
   }
 }
 
