@@ -1,0 +1,26 @@
+name: 'macOS'
+on:
+  push:
+    branches: [ 'master' ]
+  pull_request:
+    branches: [ 'master' ]
+
+jobs:
+  macos-build:
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [ 'Release', 'Debug' ]
+        conan_preset: [ 'conan-release', 'conan-debug' ]
+        exclude:
+          - build_type: 'Release'
+            conan_preset: 'conan-debug'
+          - build_type: 'Debug'
+            conan_preset: 'conan-release'
+    uses: 'podumai/containers/.github/workflows/ci.yml@master'
+    with:
+      os: 'macos-latest'
+      build_type: ${{ matrix.build_type }}
+      configure_preset: ${{ matrix.conan_preset }}
+      conan_preset: ${{ matrix.conan_preset }}
+      compiler: 'apple-clang'

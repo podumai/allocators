@@ -1,0 +1,52 @@
+name: 'CI'
+run-name: '${{ github.actor }} has done ${{ github.event_name }} to master branch'
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        required: true
+        type: string
+      build_type:
+        required: true
+        type: string
+      configure_preset:
+        required: true
+        type: string
+      conan_preset:
+        required: true
+        type: string
+      compiler:
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ${{ inputs.os }}
+    steps:
+      - run: echo "The job was automatically triggered by a ${{ github.event_name }} event"
+
+      - name: 'Cloning git repository'
+        uses: 'actions/checkout@v4'
+
+      - name: 'Setup C++ infrastructure'
+        uses: 'aminya/setup-cpp@v1'
+        with:
+          compiler: ${{ inputs.compiler }}
+          cmake: true
+          conan: true
+      
+      - name: 'Setup default conan profile'
+        run: conan profile detect --force
+      
+      - name: 'Install project dependencies'
+        run: conan install . -s:a build_type=${{ inputs.build_type }} -s:a compiler.cppstd=23 --build=missing
+      
+      - name: 'CMake configuration phase'
+        run: cmake --preset ${{ inputs.configure_preset }}
+      
+      - name: 'CMake build phase'
+        run: cmake --build --preset ${{ inputs.conan_preset }}
+      
+      - name: 'CMake test phase'
+        run: ctest --preset ${{ inputs.conan_preset }}

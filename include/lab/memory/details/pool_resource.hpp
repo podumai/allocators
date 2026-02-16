@@ -1,16 +1,21 @@
-module;
+#pragma once
 
 #include <cassert>
 #include <cstddef>
 #include <format>
+#include <lab/memory/details/memory_resource.hpp>
+#include <lab/memory/details/null_memory_resource.hpp>
 #include <memory>
 #include <new>
 #include <stdexcept>
-#include <tpu/modules/module_helper_macros.hpp>
 #include <utility>
 #include <vector>
 
-export module memory_pool;
+/**
+ * @brief Namespace containing implementation of MemoryPool and PoolAllocator classes.
+ * @namespace lab::memory
+ */
+namespace lab::memory {
 
 /**
  * @brief Union that represents trivial building block.
@@ -67,13 +72,21 @@ template<typename BlockType>
 requires (requires(BlockType block) {
   { block.next_ } -> std::same_as<BlockType*&>;
 } && std::conjunction_v<std::negation<std::is_pointer<BlockType>>, std::negation<std::is_reference<BlockType>>>)
-class FreeList final {
+class [[nodiscard]] FreeList {
  public:
+  using block_type = BlockType;
+  using block_pointer = block_type*;
+  using BlockPointer = block_pointer;
+
   FreeList() noexcept = default;
+
+  FreeList(const FreeList&) = delete ("FreeList is move-only type");
 
   FreeList(FreeList&& other) noexcept : free_blocks_{std::exchange(other.free_blocks_, nullptr)} { }
 
   ~FreeList() = default;
+
+  auto operator=(const FreeList&) -> FreeList& = delete ("FreeList is move-only type");
 
   auto operator=(FreeList&& other) noexcept -> FreeList& {
     assert(this != &other);
@@ -90,7 +103,7 @@ class FreeList final {
    *
    * @throws None (no-throw guarantee).
    */
-  auto Push(BlockType* block) noexcept -> void {
+  auto Push(BlockPointer block) noexcept -> void {
     assert(block);
     block->next_ = free_blocks_;
     free_blocks_ = block;
@@ -105,9 +118,9 @@ class FreeList final {
    *
    * @return BlockType* New free block.
    */
-  [[nodiscard]] auto Pop() noexcept -> BlockType* {
+  [[nodiscard]] auto Pop() noexcept -> BlockPointer {
     assert(free_blocks_);
-    BlockType* block{free_blocks_};
+    BlockPointer block{free_blocks_};
     free_blocks_ = free_blocks_->next_;
     return block;
   }
@@ -135,11 +148,8 @@ class FreeList final {
   auto Clear() noexcept -> void { free_blocks_ = nullptr; }
 
  private:
-  BlockType* free_blocks_{nullptr};
+  BlockPointer free_blocks_{nullptr};
 };
-
-template<typename T>
-class PoolAllocator;
 
 /**
  * @brief The base class that represents generic interface.
@@ -170,14 +180,6 @@ class MemoryPoolBase {
   virtual ~MemoryPoolBase() = default;
 };
 
-START_EXPORT_SECTION
-
-/**
- * @brief Namespace containing implementation of MemoryPool and PoolAllocator classes.
- * @namespace lab::memory
- */
-namespace lab::memory {
-
 /**
  * @brief Class that represents pool allocation strategy with fixed size blocks.
  *
@@ -186,13 +188,19 @@ namespace lab::memory {
  */
 template<std::size_t BlockSize, std::size_t BlocksPerRegion>
 requires (((BlockSize & 1) == 0) && BlockSize > 0 && BlocksPerRegion > 0)
-class MemoryPool final : virtual public MemoryPoolBase {
+class [[nodiscard]] PoolMemoryResource : virtual public MemoryResource {
   using BlockType = Block<BlockSize>;
 
   static constexpr std::size_t kInitialPoolCount{5};
 
  public:
-  explicit MemoryPool(const std::size_t region_count = kInitialPoolCount) : regions_(region_count) {
+  PoolMemoryResource() = default;
+
+  explicit PoolMemoryResource(const std::size_t region_count, MemoryResource* resource) : regions_(region_count) {
+    if (resource) {
+      upstream_resource_ = resource;
+    }
+
     if (!region_count) [[unlikely]] {
       return;
     }
@@ -209,7 +217,15 @@ class MemoryPool final : virtual public MemoryPoolBase {
     }
   }
 
-  MemoryPool(MemoryPool&&) noexcept = default;
+  explicit PoolMemoryResource(
+    MemoryResource* upstream_resource
+  ) noexcept(std::is_nothrow_default_constructible_v<decltype(regions_)>) {
+    if (upstream_resource) [[likely]] {
+      upstream_resource_ = upstream_resource;
+    }
+  }
+
+  PoolMemoryResource(PoolMemoryResource&&) noexcept = default;
 
  private:
   /**
@@ -239,7 +255,13 @@ class MemoryPool final : virtual public MemoryPoolBase {
    *
    * @return void* The pointer to the fixed size block.
    */
-  [[nodiscard]] auto Allocate() -> void* override {
+  [[nodiscard]] auto Allocate(SizeType bytes) -> void* override {
+    if (!bytes) [[unlikely]] {
+      ++bytes;
+    }
+    if (bytes > BlockSize) {
+      return upstream_resource_->Allocate(bytes);
+    }
     if (free_list_.Empty()) {
       regions_.push_back(NewRegion());
       free_list_.Push(regions_.back().get());
@@ -256,7 +278,13 @@ class MemoryPool final : virtual public MemoryPoolBase {
    * @warning **Undefined Behaviour** if:
    *   - The pointer passed does not belong to the memory pool.
    */
-  auto Deallocate(void* ptr) noexcept -> void override { free_list_.Push(reinterpret_cast<BlockType*>(ptr)); }
+  auto Deallocate(void* ptr, const SizeType bytes) -> void override {
+    if (bytes > BlockSize) {
+      upstream_resource_->Deallocate(ptr, bytes);
+      return;
+    }
+    free_list_.Push(reinterpret_cast<BlockType*>(ptr));
+  }
 
   /**
    * @brief Releases resources obtained by memory pool.
@@ -269,11 +297,20 @@ class MemoryPool final : virtual public MemoryPoolBase {
     free_list_.Clear();
   }
 
-  auto operator=(MemoryPool&&) noexcept -> MemoryPool& = default;
+  [[nodiscard]] auto IsEqual(const MemoryResource& memory_resource) const noexcept -> bool override {
+    if (const PoolMemoryResource* pool_resource{dynamic_cast<const PoolMemoryResource*>(&memory_resource)};
+        pool_resource) {
+      return this == pool_resource;
+    }
+    return false;
+  }
+
+  auto operator=(PoolMemoryResource&&) noexcept -> PoolMemoryResource& = default;
 
  private:
   std::vector<MemoryRegionType<BlockType>> regions_;
   FreeList<BlockType> free_list_;
+  MemoryResource* upstream_resource_{NewMemoryResource::Instance()};
 };
 
 /**
@@ -284,7 +321,7 @@ class MemoryPool final : virtual public MemoryPoolBase {
  * @note `PoolAllocator` class does not provide `void` overload.
  */
 template<typename T>
-class PoolAllocator {
+class [[nodiscard]] PoolAllocator {
   template<typename>
   friend class PoolAllocator;
 
@@ -303,14 +340,21 @@ class PoolAllocator {
    * @brief Parametrisized constructor for operating on pool instance.
    * @public
    *
-   * @param[in] pool Memory pool to allocate from.
+   * @tparam BlockSize The block size that will be used for pool creation.
+   * @tparam BlockPerRegion The number of blocks that one pool will contain.
+   *
+   * @param[in] pool_resource Memory pool to allocate from.
    */
-  explicit PoolAllocator(MemoryPoolBase* pool) noexcept : pool_{pool} { }
-
-  PoolAllocator(const PoolAllocator& other) noexcept = default;
+  template<std::size_t BlockSize, std::size_t BlocksPerRegion>
+  PoolAllocator(PoolMemoryResource<BlockSize, BlocksPerRegion>* const pool_resource) noexcept
+    : pool_resource_{pool_resource} { }
 
   template<typename U>
-  PoolAllocator(const PoolAllocator<U>& other) noexcept : pool_{other.GetPool()} { }
+  PoolAllocator(const PoolAllocator<U>& other) noexcept : pool_resource_{other.GetPool()} { }
+
+  PoolAllocator(const PoolAllocator& other) noexcept : pool_resource_{other.GetPool()} { }
+
+  PoolAllocator(PoolAllocator&& other) noexcept = default;
 
   ~PoolAllocator() = default;
 
@@ -324,12 +368,8 @@ class PoolAllocator {
    *
    * @return `nullptr` if `n` is equal to zero, pointer to the requested memory otherwise.
    */
-  [[nodiscard]] auto allocate(const std::size_t n) const -> value_type* {
-    assert(pool_ && n < 2);
-    if (n) [[likely]] {
-      return reinterpret_cast<value_type*>(pool_->Allocate());
-    }
-    return nullptr;
+  [[nodiscard]] auto allocate(const size_type n) -> value_type* {
+    return reinterpret_cast<value_type*>(pool_resource_->Allocate(n * sizeof(value_type)));
   }
 
   /**
@@ -344,10 +384,10 @@ class PoolAllocator {
    * @warning **Undefined Behaviour** if:
    *   - ptr does not belong to the underlying memory pool.
    */
-  auto deallocate(value_type* const ptr, [[maybe_unused]] const std::size_t n) const noexcept -> void {
-    assert(pool_);
+  auto deallocate(value_type* const ptr, const size_type n) noexcept -> void {
+    assert(pool_resource_);
     if (ptr) [[likely]] {
-      pool_->Deallocate(ptr);
+      pool_resource_->Deallocate(ptr, n * sizeof(value_type));
     }
   }
 
@@ -360,7 +400,7 @@ class PoolAllocator {
    *
    * @return `MemoryPoolBase*` The pointer to the underlying memory pool.
    */
-  [[nodiscard]] auto GetPool() const noexcept -> MemoryPoolBase* { return pool_; }
+  [[nodiscard]] auto GetPool() const noexcept -> MemoryResource* { return pool_resource_; }
 
  public:
   auto operator=(const PoolAllocator& other) noexcept -> PoolAllocator& = default;
@@ -369,18 +409,16 @@ class PoolAllocator {
 
   template<typename U>
   [[nodiscard]] auto operator==(const PoolAllocator<U>& other) const noexcept -> bool {
-    return pool_ == other.GetPool();
+    return pool_resource_ == other.GetPool();
   }
 
   template<typename U>
   [[nodiscard]] auto operator!=(const PoolAllocator<U>& other) const noexcept -> bool {
-    return pool_ != other.GetPool();
+    return pool_resource_ != other.GetPool();
   }
 
  private:
-  MemoryPoolBase* pool_{nullptr};
+  MemoryResource* pool_resource_{nullptr};
 };
 
 }  // namespace lab::memory
-
-END_EXPORT_SECTION

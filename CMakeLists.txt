@@ -19,7 +19,7 @@ find_package(Catch2 3 REQUIRED)
 include(CTest)
 include(Catch)
 
-add_subdirectory(modules)
 add_subdirectory(app)
 add_subdirectory(tests)
 add_subdirectory(examples)
+add_subdirectory(src)

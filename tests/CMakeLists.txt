@@ -12,7 +12,7 @@ target_compile_features(
 target_link_libraries(
   AllocatorTests
   PRIVATE
-  MemoryPoolModule::MemoryPoolModule
+  LabMemory::LabMemory
   Catch2::Catch2
   Catch2::Catch2WithMain
 )

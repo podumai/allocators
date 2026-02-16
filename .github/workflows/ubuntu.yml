@@ -1,0 +1,27 @@
+name: 'ubuntu-latest'
+on:
+  push:
+    branches: [ 'master' ]
+  pull_request:
+    branches: [ 'master' ]
+
+jobs:
+  ubuntu-build:
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [ 'Release', 'Debug' ]
+        conan_preset: [ 'conan-release', 'conan-debug' ]
+        compiler: [ 'gcc', 'llvm' ]
+        exclude:
+          - build_type: 'Release'
+            conan_preset: 'conan-debug'
+          - build_type: 'Debug'
+            conan_preset: 'conan-release'
+    uses: 'podumai/containers/.github/workflows/ci.yml@master'
+    with:
+      os: 'ubuntu-latest'
+      build_type: ${{ matrix.build_type }}
+      configure_preset: ${{ matrix.conan_preset }}
+      conan_preset: ${{ matrix.conan_preset }}
+      compiler: ${{ matrix.compiler }}
