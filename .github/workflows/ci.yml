@@ -38,7 +38,7 @@ jobs:
         with:
           build_type: ${{ inputs.build_type }}
           configure_preset: $${ inputs.configure_preset }
-          conan_prest: ${{ inputs.conan_preset }}
+          conan_preset: ${{ inputs.conan_preset }}
   
   test:
     runs-on: ${{ inputs.os }}
