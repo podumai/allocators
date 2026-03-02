@@ -23,7 +23,7 @@ jobs:
             conan_preset: conan-debug
           - build_type: Debug
             conan_preset: conan-release
-    uses: podumai/allocators/.github/workflows/ci.yml
+    uses: podumai/allocators/.github/workflows/ci.yml@master
     with:
       os: macos-latest
       build_type: ${{ matrix.build_type }}
