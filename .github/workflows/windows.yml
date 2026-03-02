@@ -3,9 +3,13 @@ on:
   push:
     branches:
       - master
+    paths-ignore:
+      - .github/**
   pull_request:
     branches:
       - master
+    paths-ignore:
+      - .github/**
 
 jobs:
   windows-build:
@@ -19,7 +23,7 @@ jobs:
             conan_preset: conan-debug
           - build_type: Debug
             conan_preset: conan-release
-    uses: podumai/allocators/.github/workflows/ci.yml@master
+    uses: podumai/allocators/.github/workflows/ci.yml
     with:
       os: windows-latest
       build_type: ${{ matrix.build_type }}

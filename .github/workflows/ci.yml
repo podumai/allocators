@@ -42,7 +42,8 @@ jobs:
   
   test:
     runs-on: ${{ inputs.os }}
-    needs: [ build ]
+    needs:
+      - build
     steps:
       - name: Cloning git repository
         uses: actions/checkout@v4
@@ -66,7 +67,8 @@ jobs:
   
   save-artifact:
     runs-on: ${{ inputs.os }}
-    needs: [ test ]
+    needs:
+      - test
     steps:
       - name: Cloning git repository
         uses: actions/checkout@v4
@@ -91,8 +93,9 @@ jobs:
     runs-on: ${{ inputs.os }}
     permissions:
       contents: write
-    needs: [ test ]
-    if: startsWith(github.ref, refs/tags/)
+    needs:
+      - save-artifact
+    if: startsWith(github.ref, 'refs/tags/')
     steps:
       - name: Cloning git repository
         uses: actions/checkout@v4
