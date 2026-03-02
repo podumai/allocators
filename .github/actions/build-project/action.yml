@@ -1,0 +1,28 @@
+name: Build project
+description: Build the project with Conan and CMake dependencies
+
+inputs:
+  build_type:
+    description: Project build type
+    required: true
+  configure_preset:
+    description: Configuration preset for Conan2
+    required: true
+  conan_preset:
+    description: Build preset for Conan2
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: 'Setup default conan profile'
+      run: conan profile detect --force
+    
+    - name: 'Install project dependencies'
+      run: conan install . -s:a build_type=${{ inputs.build_type }} -s:a compiler.cppstd=23 --build=missing
+    
+    - name: 'CMake configuration phase'
+      run: cmake --preset ${{ inputs.configure_preset }}
+    
+    - name: 'CMake build phase'
+      run: cmake --build --preset ${{ inputs.conan_preset }}

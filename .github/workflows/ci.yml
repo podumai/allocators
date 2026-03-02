@@ -1,5 +1,4 @@
-name: 'CI'
-run-name: '${{ github.actor }} has done ${{ github.event_name }} to master branch'
+name: CI
 
 on:
   workflow_call:
@@ -24,29 +23,89 @@ jobs:
   build:
     runs-on: ${{ inputs.os }}
     steps:
-      - run: echo "The job was automatically triggered by a ${{ github.event_name }} event"
+      - name: Cloning git repository
+        uses: actions/checkout@v4
 
-      - name: 'Cloning git repository'
-        uses: 'actions/checkout@v4'
-
-      - name: 'Setup C++ infrastructure'
-        uses: 'aminya/setup-cpp@v1'
+      - name: Setup C++ infrastructure
+        uses: aminya/setup-cpp@v1
         with:
           compiler: ${{ inputs.compiler }}
           cmake: true
           conan: true
       
-      - name: 'Setup default conan profile'
-        run: conan profile detect --force
+      - name: Build project
+        uses: ./.github/actions/build-project
+        with:
+          build_type: ${{ inputs.build_type }}
+          configure_preset: $${ inputs.configure_preset }
+          conan_prest: ${{ inputs.conan_preset }}
+  
+  test:
+    runs-on: ${{ inputs.os }}
+    needs: [ build ]
+    steps:
+      - name: Cloning git repository
+        uses: actions/checkout@v4
       
-      - name: 'Install project dependencies'
-        run: conan install . -s:a build_type=${{ inputs.build_type }} -s:a compiler.cppstd=23 --build=missing
+      - name: Setup C++ dependencies
+        uses: aminya/setup-cpp@v1
+        with:
+          compiler: ${{ inputs.compiler }}
+          cmake: true
+          conan: true
       
-      - name: 'CMake configuration phase'
-        run: cmake --preset ${{ inputs.configure_preset }}
+      - name: Build project
+        uses: ./.github/actions/build-project
+        with:
+          build_type: ${{ inputs.build_type }}
+          configure_preset: ${{ inputs.configure_preset }}
+          conan_preset: ${{ inputs.conan_preset }}
       
-      - name: 'CMake build phase'
-        run: cmake --build --preset ${{ inputs.conan_preset }}
-      
-      - name: 'CMake test phase'
+      - name: Unit-testing
         run: ctest --preset ${{ inputs.conan_preset }}
+  
+  save-artifact:
+    runs-on: ${{ inputs.os }}
+    needs: [ test ]
+    steps:
+      - name: Cloning git repository
+        uses: actions/checkout@v4
+      
+      - name: Make archive
+        shell: bash
+        run: |
+          tar -czf allocators-${{ runner.os }}.tar.gz \
+              --exclude=".git" \
+              --exclude=".github" \
+              ./*
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifact-allocators-${{ runner.os }}
+          path: ./allocators-${{ runner.os }}.tar.gz
+          retention-days: 5
+          overwrite: true
+
+  release:
+    runs-on: ${{ inputs.os }}
+    permissions:
+      contents: write
+    needs: [ test ]
+    if: startsWith(github.ref, refs/tags/)
+    steps:
+      - name: Cloning git repository
+        uses: actions/checkout@v4
+
+      - name: Download archive
+        uses: actions/download-artifact@v4
+        with:
+          name: artifact-allocators-${{ runner.os }}
+          path: /artifact
+      
+      - name:
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: /artifact/artifact-allocators-${{ runner.os }}.tar.gz
+          fail_on_unmatched_files: true
