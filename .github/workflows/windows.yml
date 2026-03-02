@@ -2,6 +2,11 @@ name: windows-latest
 
 on:
   pull_request:
+    types:
+      - opened
+      - synchronize
+      - closed
+      - reopened
     branches:
       - master
     paths-ignore:
