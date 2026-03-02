@@ -101,7 +101,7 @@ jobs:
       - name: Download archive
         uses: actions/download-artifact@v4
         with:
-          name: allocators-${{ runner.os }}
+          name: artifact-allocators-${{ runner.os }}
           path: ./artifact
       
       - name: Read project version
