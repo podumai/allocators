@@ -4,12 +4,15 @@ description: Build the project with Conan and CMake dependencies
 inputs:
   build_type:
     description: Project build type
+    type: string
     required: true
   configure_preset:
     description: Configuration preset for Conan2
+    type: string
     required: true
   conan_preset:
     description: Build preset for Conan2
+    type: string
     required: true
 
 runs:

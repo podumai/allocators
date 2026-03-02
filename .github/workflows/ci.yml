@@ -37,7 +37,7 @@ jobs:
         uses: ./.github/actions/build-project
         with:
           build_type: ${{ inputs.build_type }}
-          configure_preset: $${ inputs.configure_preset }
+          configure_preset: ${{ inputs.configure_preset }}
           conan_preset: ${{ inputs.conan_preset }}
   
   test:
