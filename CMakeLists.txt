@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 3.30)
+
+file(READ "${CMAKE_SOURCE_DIR}/VERSION" PROJECT_VERSION)
+string(STRIP "${PROJECT_VERSION}" PROJECT_VERSION)
+
 project(
   Allocators
-  VERSION 1.0.0
+  VERSION ${PROJECT_VERSION}
   LANGUAGES CXX
   DESCRIPTION "Laboratory work about allocators"
 )
