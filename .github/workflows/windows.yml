@@ -1,13 +1,12 @@
 name: windows-latest
+
 on:
-  push:
+  pull_request:
     branches:
       - master
     paths-ignore:
       - .github/**
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
-  pull_request:
+  push:
     branches:
       - master
     paths-ignore:
