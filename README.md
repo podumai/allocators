@@ -6,4 +6,5 @@
 
 * NullMemoryResource
 * NewMemoryResource
-* PoolMemoryResource
+* PoolMemoryResource  
+  > PoolMemoryResource can be used to allocate/deallocate fixed sized blocks (list, forward_list, etc)
