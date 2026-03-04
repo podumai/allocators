@@ -94,6 +94,7 @@ jobs:
       contents: write
     needs:
       - save-artifact
+    if: github.event_name == 'pull_request' && github.base_ref == 'master' && github.head_ref == 'dev' && github.event.pull_request.merged == true
     steps:
       - name: Clone repository
         uses: actions/checkout@v4
