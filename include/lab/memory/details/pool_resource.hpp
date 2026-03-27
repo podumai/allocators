@@ -152,35 +152,6 @@ class [[nodiscard]] FreeList {
 };
 
 /**
- * @brief The base class that represents generic interface.
- * @internal
- */
-class MemoryPoolBase {
- public:
-  /**
-   * @brief Returns allocated fixed size block.
-   * @internal
-   * @public
-   *
-   * @throws `std::bad_alloc` if allocation fails.
-   *
-   * @return void* The pointer to the fixed size block.
-   */
-  [[nodiscard]] virtual auto Allocate() -> void* = 0;
-
-  /**
-   * @brief Memory to return to the memory pool.
-   * @internal
-   * @public
-   *
-   * @throws None (no-throw guarantee).
-   */
-  virtual auto Deallocate(void*) noexcept -> void = 0;
-
-  virtual ~MemoryPoolBase() = default;
-};
-
-/**
  * @brief Class that represents pool allocation strategy with fixed size blocks.
  *
  * @tparam BlockSize The block size that will be used for pool creation.
