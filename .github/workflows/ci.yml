@@ -1,120 +1,291 @@
-name: CI
+name: 'CI/CD'
 
 on:
-  workflow_call:
-    inputs:
-      os:
-        required: true
-        type: string
-      build_type:
-        required: true
-        type: string
-      configure_preset:
-        required: true
-        type: string
-      conan_preset:
-        required: true
-        type: string
-      compiler:
-        required: true
-        type: string
+  workflow_dispatch: {}
+
+  pull_request:
+    branches: [ 'master' ]
+
+  push:
+    branches: [ 'master' ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  build:
-    runs-on: ${{ inputs.os }}
+  config:
+    runs-on: 'ubuntu-24.04'
+    permissions: {}
+    outputs:
+      linux-runner-image: ${{ steps.constants.outputs.linux-runner-image }}
+      linux-compiler: ${{ steps.constants.outputs.linux-compiler }}
+      linux-conan-profile-debug: ${{ steps.constants.outputs.linux-conan-profile-debug }}
+      linux-conan-profile-release: ${{ steps.constants.outputs.linux-conan-profile-release }}
+      macos-runner-image: ${{ steps.constants.outputs.macos-runner-image }}
+      macos-compiler: ${{ steps.constants.outputs.macos-compiler }}
+      macox-conan-profile-debug: ${{ steps.constants.outputs.macos-conan-profile-debug }}
+      macos-conan-profile-release: ${{ steps.constants.outputs.macos-conan-profile-release }}
     steps:
-      - name: Cloning git repository
-        uses: actions/checkout@v4
-
-      - name: Setup C++ infrastructure
-        uses: aminya/setup-cpp@v1
-        with:
-          compiler: ${{ inputs.compiler }}
-          cmake: true
-          conan: true
-      
-      - name: Build project
-        uses: ./.github/actions/build-project
-        with:
-          build_type: ${{ inputs.build_type }}
-          configure_preset: ${{ inputs.configure_preset }}
-          conan_preset: ${{ inputs.conan_preset }}
-  
-  test:
-    runs-on: ${{ inputs.os }}
-    needs:
-      - build
-    steps:
-      - name: Cloning git repository
-        uses: actions/checkout@v4
-      
-      - name: Setup C++ dependencies
-        uses: aminya/setup-cpp@v1
-        with:
-          compiler: ${{ inputs.compiler }}
-          cmake: true
-          conan: true
-      
-      - name: Build project
-        uses: ./.github/actions/build-project
-        with:
-          build_type: ${{ inputs.build_type }}
-          configure_preset: ${{ inputs.configure_preset }}
-          conan_preset: ${{ inputs.conan_preset }}
-      
-      - name: Unit-testing
-        run: ctest --preset ${{ inputs.conan_preset }}
-  
-  save-artifact:
-    runs-on: ${{ inputs.os }}
-    needs:
-      - test
-    steps:
-      - name: Cloning git repository
-        uses: actions/checkout@v4
-      
-      - name: Make archive
+      - name: 'Define constants'
+        id: 'constants'
         run: |
-          tar -czf allocators-${{ runner.os }}.tar.gz \
-              --exclude=".git" \
-              --exclude=".github" \
-              ./*
+          echo "linux-runner-image=ubuntu-24.04" >> $GITHUB_OUTPUT
+          echo "linux-compiler=llvm-21" >> $GITHUB_OUTPUT
+          echo "linux-conan-profile-debug=linux-x86_64-debug" >> $GITHUB_OUTPUT
+          echo "linux-conan-profile-release=linux-x86_64-static" >> $GITHUB_OUTPUT
+          echo "macos-runner-image=macos-26" >> $GITHUB_OUTPUT
+          echo "macos-compiler=apple-clang-17" >> $GITHUB_OUTPUT
+          echo "macos-conan-profile-debug=macos-arm64-debug" >> $GITHUB_OUTPUT
+          echo "macos-conan-profile-release=macos-arm64-static" >> $GITHUB_OUTPUT
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+  lint-commits:
+    runs-on: ${{ needs.config.outputs.linux-runner-image }}
+    permissions:
+      contents: 'read'
+    needs: [ 'config' ]
+    steps:
+      - name: 'Clone the repository'
+        uses: 'actions/checkout@v6'
         with:
-          name: artifact-allocators-${{ runner.os }}
-          path: ./allocators-${{ runner.os }}.tar.gz
-          retention-days: 5
+          fetch-depth: 0
+
+      - name: 'Setup node'
+        uses: 'actions/setup-node@v6'
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: 'Install commitlint'
+        run: npm install -D @commitlint/cli @commitlint/config-conventional
+
+      - name: 'Validate commits'
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            npx commitlint --from ${{ github.event.before }} --to ${{ github.event.after }} --verbose
+          else
+            npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
+          fi
+
+  linter:
+    runs-on: ${{ needs.config.outputs.linux-runner-image }}
+    permissions:
+      contents: 'read'
+    needs: [ 'config', 'lint-commits' ]
+    steps:
+      - name: 'Clone the repository'
+        uses: 'actions/checkout@v6'
+
+      - name: 'Setup clang-tidy'
+        uses: 'aminya/setup-cpp@v1'
+        with:
+          compiler: ${{ needs.config.outputs.linux-compiler }}
+          clang-tidy: true
+          clang-format: true
+          ninja: true
+          conan: true
+
+      - name: 'Determine Conan2 profile'
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "CONAN_PROFILE=./profiles/${{ needs.config.outputs.linux-conan-profile-release }}" >> $GITHUB_ENV
+          else
+            echo "CONAN_PROFILE=./profiles/${{ needs.config.outputs.linux-conan-profile-debug }}" >> $GITHUB_ENV
+          fi
+
+      - name: '[Conan2] Install project dependencies'
+        run: conan install . --build=missing --profile:all=${{ env.CONAN_PROFILE }}
+
+      - name: 'Determine CMake preset'
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "CMAKE_PRESET=conan-release" >> $GITHUB_ENV
+            echo "BUILD_DIR=./build/Release" >> $GITHUB_ENV
+          else
+            echo "CMAKE_PRESET=conan-debug" >> $GITHUB_ENV
+            echo "BUILD_DIR=./build/Debug" >> $GITHUB_ENV
+          fi
+
+      - name: '[CMake] Configure project'
+        run: cmake --preset ${{ env.CMAKE_PRESET }} -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      - name: 'Run linter'
+        run: run-clang-tidy -config-file .clang-tidy -p ${{ env.BUILD_DIR }}
+
+  build:
+    runs-on: ${{ matrix.os }}
+    needs: [ 'config', 'linter' ]
+    permissions:
+      contents: 'read'
+    strategy:
+      matrix:
+        include:
+          - os: ${{ needs.config.outputs.linux-runner-image }}
+            compiler: ${{ needs.config.outputs.linux-compiler }}
+          - os: ${{ needs.config.outputs.macos-runner-image }}
+            compiler: ${{ needs.config.outputs.macos-compiler }}
+    steps:
+      - name: 'Clone the repository'
+        uses: 'actions/checkout@v6'
+
+      - name: 'Setup C++ dependencies'
+        uses: 'aminya/setup-cpp@v1'
+        with:
+          compiler: ${{ matrix.compiler }}
+          cmake: true
+          ninja: true
+          conan: true
+
+      - name: 'Determine conan2 profile'
+        run: |
+          OS=$(echo "${{ runner.os }}" | awk '{ print tolower($0) }')
+          
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "CONAN_PROFILE=./profiles/${OS}-conan-profile-release" >> $GITHUB_ENV
+          else
+            echo "CONAN_PROFILE=./profiles/${OS}-conan-profile-debug" >> $GITHUB_ENV
+          fi
+
+      - name: '[Conan2] Install project dependencies'
+        run: conan install . --build=missing --profile:all=${{ env.CONAN_PROFILE }}
+
+      - name: 'Determine cmake preset'
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "CMAKE_PRESET=conan-release" >> $GITHUB_ENV
+          else
+            echo "CMAKE_PRESET=conan-debug" >> $GITHUB_ENV
+          fi
+
+      - name: '[CMake] Configure project'
+        run: cmake --preset ${{ env.CMAKE_PRESET }}
+
+      - name: '[CMake] Build project'
+        run: cmake --build --preset ${{ env.CMAKE_PRESET }}
+
+      - name: 'Archive complete build artifacts'
+        run: tar -czf build-archive-${{ runner.os }}.tar.gz CMakeUserPresets.json build
+
+      - name: 'Upload complete build archive'
+        uses: 'actions/upload-artifact@v4'
+        with:
+          name: build-archive-${{ runner.os }}-${{ github.run_id }}
+          path: build-archive-${{ runner.os }}.tar.gz
+          retention-days: 1
           overwrite: true
 
-  release:
-    runs-on: ${{ inputs.os }}
-    permissions:
-      contents: write
-    needs:
-      - save-artifact
-    if: github.event_name == 'pull_request' && github.base_ref == 'master' && github.head_ref == 'dev' && github.event.pull_request.merged == true
+      - name: 'Cache conan directories'
+        uses: 'actions/cache@v5'
+        with:
+          path: ${{ env.CONAN_CONFIG_HOME }}
+          key: conan-${{ runner.os }}-${{ github.run_id }}
+
+  test:
+    runs-on: ${{ matrix.os }}
+    permissions: { }
+    needs: [ 'config', 'build' ]
+    strategy:
+      matrix:
+        include:
+          - os: ${{ needs.config.outputs.linux-runner-image }}
+            compiler: ${{ needs.config.outputs.linux-compiler }}
+          - os: ${{ needs.config.outputs.macos-runner-image }}
+            compiler: ${{ needs.config.outputs.macos-compiler }}
     steps:
-      - name: Clone repository
-        uses: actions/checkout@v4
-        
-      - name: Download archive
-        uses: actions/download-artifact@v4
+      - name: 'Clone the repository'
+        uses: 'actions/checkout@v6'
+
+      - name: 'Setup C++ dependencies'
+        uses: 'aminya/setup-cpp@v1'
         with:
-          name: artifact-allocators-${{ runner.os }}
-          path: ./artifact
-      
-      - name: Read project version
-        id: version
+          compiler: ${{ matrix.compiler }}
+          cmake: true
+          conan: true
+
+      - name: 'Find conan home directory'
+        run: echo "CONAN_CONFIG_HOME=$(conan config home)" >> $GITHUB_ENV
+
+      - name: 'Restore conan directories'
+        uses: 'actions/cache/restore@v5'
+        with:
+          path: ${{ env.CONAN_CONFIG_HOME }}
+          key: conan-${{ runner.os }}-${{ github.run_id }}
+
+      - name: 'Download build artifacts'
+        uses: 'actions/download-artifact@v4'
+        with:
+          name: build-archive-${{ runner.os }}-${{ github.run_id }}
+
+      - name: 'Unarchive build artifacts'
+        run: tar -xzf build-archive-${{ runner.os }}.tar.gz
+
+      - name: 'Find ctest preset'
         run: |
-          VERSION=$(cat VERSION | tr -d '[:space:]')
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-      
-      - name:
-        uses: softprops/action-gh-release@v2
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "CTEST_PRESET=conan-release" >> $GITHUB_ENV
+          else
+            echo "CTEST_PRESET=conan-debug" >> $GITHUB_ENV
+          fi
+
+      - name: 'Run tests'
+        run: ctest --preset ${{ env.CTEST_PRESET }}
+
+  archive:
+    runs-on: ${{ needs.configs.outputs.linux-runner-image }}
+    permissions: { }
+    needs: [ 'config', 'test' ]
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    steps:
+      - name: 'Download Linux build artifacts'
+        uses: 'actions/download-artifact@v4'
         with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: v${{ steps.version.outputs.version }}
-          files: ./artifact/allocators-${{ runner.os }}.tar.gz
-          fail_on_unmatched_files: true
+          path: artifacts
+          pattern: build-archive-*
+
+      - name: 'Prepare Linux assets'
+        run: |
+          mkdir -p Linux
+          tar -xzf artifacts/build-archive-Linux-${{ github.run_id }}/build-archive-*.tar.gz -C Linux
+          tar -czf linux-x86_64.tar.gz -C Linux/build/Release/bin .
+
+      - name: 'Prepare macOS assets'
+        run: |
+          mkdir -p macOS
+          tar -xzf artifacts/build-archive-macOS-${{ github.run_id }}/build-archive-*.tar.gz -C macOS
+          tar -czf macos-arm64.tar.gz -C macOS/build/Release/bin .
+
+      - name: 'Upload release artifacts'
+        uses: 'actions/upload-artifact@v4'
+        with:
+          name: release-assets-${{ github.run_id }}
+          path: ./*.tar.gz
+
+  release:
+    runs-on: ${{ needs.config.outputs.linux-runner-image }}
+    permissions:
+      contents: 'write'
+    needs: [ 'config', 'archive' ]
+    steps:
+      - name: 'Clone the repository'
+        uses: 'actions/checkout@v6'
+        with:
+          fetch-depth: 0
+
+      - name: 'Bump version and push tag'
+        id: bump-version
+        uses: 'mathieudutour/github-tag-action@v6.2'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 'Download archived release executables'
+        uses: 'actions/download-artifact@v4'
+        with:
+          name: release-archives-${{ github.run_id }}
+
+      - name: 'Create GitHub release'
+        uses: 'ncipollo/release-action@v1'
+        with:
+          tag: ${{ steps.bump-version.outputs.new_tag }}
+          name: Release ${{ steps.bump-version.outputs.new_tag }}
+          body: ${{ steps.bump-version.outputs.changelog }}
+          artifacts: ./*.tar.gz
