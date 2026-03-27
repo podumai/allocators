@@ -188,7 +188,7 @@ class MemoryPoolBase {
  */
 template<std::size_t BlockSize, std::size_t BlocksPerRegion>
 requires (((BlockSize & 1) == 0) && BlockSize > 0 && BlocksPerRegion > 0)
-class [[nodiscard]] PoolMemoryResource : virtual public MemoryResource {
+class [[nodiscard]] PoolMemoryResource : virtual public AbstractMemoryResource {
   using BlockType = Block<BlockSize>;
 
   static constexpr std::size_t kInitialPoolCount{5};
@@ -240,9 +240,9 @@ class [[nodiscard]] PoolMemoryResource : virtual public MemoryResource {
   [[nodiscard]] static auto NewRegion() -> MemoryRegionType<BlockType> {
     auto region{MakeRegion<BlockType>(BlocksPerRegion)};
     for (std::size_t i{1}; i < BlocksPerRegion; ++i) {
-      region[i].next_ = &region[i - 1];
+      region[i].next_ = &region[i - 1]; // NOLINT: union can only contain POD
     }
-    region[BlocksPerRegion - 1].next_ = nullptr;
+    region[BlocksPerRegion - 1].next_ = nullptr; // NOLINT: union can only contain POD
     return region;
   }
 
