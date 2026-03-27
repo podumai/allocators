@@ -326,6 +326,7 @@ class [[nodiscard]] PoolAllocator {
   friend class PoolAllocator;
 
  public:
+  // NOLINTBEGIN
   using value_type = T;
   using size_type = std::size_t;
   using difference_type = std::ptrdiff_t;
@@ -333,6 +334,7 @@ class [[nodiscard]] PoolAllocator {
   using propagate_on_container_move_assignment = std::true_type;
   using propagate_on_container_copy_construction = std::true_type;
   using propagate_on_container_swap = std::true_type;
+  // NOLINTEND
 
   PoolAllocator() noexcept = default;
 
@@ -368,7 +370,7 @@ class [[nodiscard]] PoolAllocator {
    *
    * @return `nullptr` if `n` is equal to zero, pointer to the requested memory otherwise.
    */
-  [[nodiscard]] auto allocate(const size_type n) -> value_type* {
+  [[nodiscard]] auto allocate(const size_type n) -> value_type* { // NOLINT
     return reinterpret_cast<value_type*>(pool_resource_->Allocate(n * sizeof(value_type)));
   }
 
@@ -384,7 +386,7 @@ class [[nodiscard]] PoolAllocator {
    * @warning **Undefined Behaviour** if:
    *   - ptr does not belong to the underlying memory pool.
    */
-  auto deallocate(value_type* const ptr, const size_type n) noexcept -> void {
+  auto deallocate(value_type* const ptr, const size_type n) noexcept -> void { // NOLINT
     assert(pool_resource_);
     if (ptr) [[likely]] {
       pool_resource_->Deallocate(ptr, n * sizeof(value_type));
