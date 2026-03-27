@@ -200,7 +200,7 @@ class [[nodiscard]] PoolMemoryResource : virtual public AbstractMemoryResource {
 
  private:
   /**
-   * @brief Constructs new memory region and maps each block in signly-linked list.
+   * @brief Constructs new memory region and maps each block in singly-linked list.
    * @internal
    * @private
    *
