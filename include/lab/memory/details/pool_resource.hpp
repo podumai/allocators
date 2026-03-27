@@ -310,11 +310,11 @@ class [[nodiscard]] PoolAllocator {
   PoolAllocator() noexcept = default;
 
   /**
-   * @brief Parametrisized constructor for operating on pool instance.
+   * @brief Parametrized constructor for operating on pool instance.
    * @public
    *
    * @tparam BlockSize The block size that will be used for pool creation.
-   * @tparam BlockPerRegion The number of blocks that one pool will contain.
+   * @tparam BlocksPerRegion The number of blocks that one pool will contain.
    *
    * @param[in] pool_resource Memory pool to allocate from.
    */
