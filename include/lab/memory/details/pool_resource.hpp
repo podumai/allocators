@@ -155,7 +155,7 @@ class [[nodiscard]] FreeList {
  * @brief Class that represents pool allocation strategy with fixed size blocks.
  *
  * @tparam BlockSize The block size that will be used for pool creation.
- * @tparam BlockPerRegion The number of blocks that one pool will contain.
+ * @tparam BlocksPerRegion The number of blocks that one pool will contain.
  */
 template<std::size_t BlockSize, std::size_t BlocksPerRegion>
 requires (((BlockSize & 1) == 0) && BlockSize > 0 && BlocksPerRegion > 0)
