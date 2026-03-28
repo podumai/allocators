@@ -184,7 +184,7 @@ class [[nodiscard]] PoolMemoryResource : virtual public AbstractMemoryResource {
     constexpr std::size_t kLastBlock{BlocksPerRegion - 1};
     const std::size_t last_memory_region{region_count - 1};
     for (std::size_t i{}; i < last_memory_region; ++i) {
-      regions_[i][kLastBlock].next_ = regions_[i + 1].get();
+      regions_[i][kLastBlock].next_ = regions_[i + 1].get(); // NOLINT
     }
   }
 
