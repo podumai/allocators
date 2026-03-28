@@ -167,7 +167,7 @@ class [[nodiscard]] PoolMemoryResource : virtual public AbstractMemoryResource {
  public:
   PoolMemoryResource() = default;
 
-  explicit PoolMemoryResource(const std::size_t region_count, MemoryResource* resource) : regions_(region_count) {
+  explicit PoolMemoryResource(const std::size_t region_count, AbstractMemoryResource* resource) : regions_(region_count) {
     if (resource) {
       upstream_resource_ = resource;
     }
@@ -189,7 +189,7 @@ class [[nodiscard]] PoolMemoryResource : virtual public AbstractMemoryResource {
   }
 
   explicit PoolMemoryResource(
-    MemoryResource* upstream_resource
+    AbstractMemoryResource* upstream_resource
   ) noexcept(std::is_nothrow_default_constructible_v<decltype(regions_)>) {
     if (upstream_resource) [[likely]] {
       upstream_resource_ = upstream_resource;
@@ -272,7 +272,7 @@ class [[nodiscard]] PoolMemoryResource : virtual public AbstractMemoryResource {
     free_list_.Clear();
   }
 
-  [[nodiscard]] auto IsEqual(const MemoryResource& memory_resource) const noexcept -> bool override {
+  [[nodiscard]] auto IsEqual(const AbstractMemoryResource& memory_resource) const noexcept -> bool override {
     if (const PoolMemoryResource* pool_resource{dynamic_cast<const PoolMemoryResource*>(&memory_resource)};
         pool_resource) {
       return this == pool_resource;
@@ -287,7 +287,7 @@ class [[nodiscard]] PoolMemoryResource : virtual public AbstractMemoryResource {
  private:
   std::vector<MemoryRegionType<BlockType>> regions_;
   FreeList<BlockType> free_list_;
-  MemoryResource* upstream_resource_{NewMemoryResource::Instance()};
+  AbstractMemoryResource* upstream_resource_{NewMemoryResource::Instance()};
 };
 
 /**
