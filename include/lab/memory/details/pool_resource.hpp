@@ -325,7 +325,7 @@ class [[nodiscard]] PoolAllocator {
    * @param[in] pool_resource Memory pool to allocate from.
    */
   template<std::size_t BlockSize, std::size_t BlocksPerRegion>
-  PoolAllocator(PoolMemoryResource<BlockSize, BlocksPerRegion>* const pool_resource) noexcept
+  explicit PoolAllocator(PoolMemoryResource<BlockSize, BlocksPerRegion>* const pool_resource) noexcept
     : pool_resource_{pool_resource} { }
 
   template<typename U>
