@@ -27,7 +27,7 @@ class [[nodiscard]] NullMemoryResource : public AbstractMemoryResource {
 
   [[nodiscard]] auto Allocate(SizeType bytes) -> void* override;
 
-  auto Deallocate(void* ptr, const SizeType bytes) -> void override;
+  auto Deallocate(void* ptr, SizeType bytes) -> void override;
 
   [[nodiscard]] auto IsEqual(const Base& other) const noexcept -> bool override;
 };
