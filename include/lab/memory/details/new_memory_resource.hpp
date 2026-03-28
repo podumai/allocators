@@ -4,12 +4,12 @@
 
 namespace lab::memory {
 
-class [[nodiscard]] NewMemoryResource : public MemoryResource {
-  using Base = MemoryResource;
+class [[nodiscard]] NewMemoryResource : public AbstractMemoryResource {
+  using Base = AbstractMemoryResource;
 
  protected:
   NewMemoryResource() = default;
-  ~NewMemoryResource() = default;
+  ~NewMemoryResource() override = default;
 
  public:
   using size_type = Base::size_type;
