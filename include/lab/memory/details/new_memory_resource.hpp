@@ -9,7 +9,6 @@ class [[nodiscard]] NewMemoryResource : public AbstractMemoryResource {
 
  protected:
   NewMemoryResource() = default;
-  ~NewMemoryResource() override = default;
 
  public:
   using size_type = Base::size_type; // NOLINT: std like alias for compatibility
@@ -19,6 +18,7 @@ class [[nodiscard]] NewMemoryResource : public AbstractMemoryResource {
 
   NewMemoryResource(const NewMemoryResource&) = delete;
   NewMemoryResource(NewMemoryResource&&) noexcept = delete;
+  ~NewMemoryResource() override = default;
 
   auto operator=(const NewMemoryResource&) -> NewMemoryResource& = delete;
   auto operator=(NewMemoryResource&&) noexcept -> NewMemoryResource& = delete;
