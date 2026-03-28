@@ -29,7 +29,7 @@ template<std::size_t BlockSize>
 requires (BlockSize > 0)
 union Block final {
   Block* next_;
-  char memory_[BlockSize];
+  char memory_[BlockSize]; // NOLINT: it is intended to be an contigious C-style array for memory reservation
 };
 
 /**
