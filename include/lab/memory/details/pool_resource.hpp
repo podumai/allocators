@@ -355,7 +355,7 @@ class [[nodiscard]] PoolAllocator {
    * @brief Returns memory to the underlying memory pool.
    * @public
    *
-   * @param[in] ptr The pointer previosly allocated by `PoolAllocator`.
+   * @param[in] ptr The pointer previously allocated by `PoolAllocator`.
    * @param[in] n The number of blocks to deallocate (This value is ignored).
    *
    * @throws None (no-throw guarantee).
