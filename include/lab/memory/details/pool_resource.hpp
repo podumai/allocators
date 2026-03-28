@@ -40,7 +40,7 @@ union Block final {
  * @tparam BlockType The type that represents block that will be mapped on raw memory.
  */
 template<typename BlockType>
-using MemoryRegionType = std::unique_ptr<BlockType[]>;
+using MemoryRegionType = std::unique_ptr<BlockType[]>; // NOLINT: it is intended to be an contigious C-style array
 
 /**
  * @brief Factory function for creating MemoryRegions.
