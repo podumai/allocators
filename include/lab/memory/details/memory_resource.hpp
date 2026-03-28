@@ -24,9 +24,9 @@ class AbstractMemoryResource {
   auto operator=(const AbstractMemoryResource&) -> AbstractMemoryResource& = default;
   auto operator=(AbstractMemoryResource&&) -> AbstractMemoryResource& = default;
 
-  [[nodiscard]] virtual auto Allocate(const SizeType bytes) -> void* = 0;
+  [[nodiscard]] virtual auto Allocate(SizeType bytes) -> void* = 0;
 
-  virtual auto Deallocate(void* ptr, const SizeType bytes) -> void = 0;
+  virtual auto Deallocate(void* ptr, SizeType bytes) -> void = 0;
 
   [[nodiscard]] virtual auto IsEqual(const AbstractMemoryResource& other) const noexcept -> bool = 0;
 };
