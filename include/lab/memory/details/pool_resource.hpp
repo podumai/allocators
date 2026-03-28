@@ -120,7 +120,7 @@ class [[nodiscard]] FreeList {
    */
   [[nodiscard]] auto Pop() noexcept -> BlockPointer {
     assert(free_blocks_);
-    BlockPointer block{free_blocks_};
+    BlockPointer const block{free_blocks_};
     free_blocks_ = free_blocks_->next_;
     return block;
   }
