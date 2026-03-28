@@ -4,8 +4,8 @@
 
 namespace lab::memory {
 
-class [[nodiscard]] NullMemoryResource : public MemoryResource {
-  using Base = MemoryResource;
+class [[nodiscard]] NullMemoryResource : public AbstractMemoryResource {
+  using Base = AbstractMemoryResource;
 
  protected:
   NullMemoryResource() noexcept = default;
