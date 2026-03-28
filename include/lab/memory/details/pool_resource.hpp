@@ -29,7 +29,7 @@ template<std::size_t BlockSize>
 requires (BlockSize > 0)
 union Block final {
   Block* next_;
-  char memory_[BlockSize];
+  char memory_[BlockSize]; // NOLINT: it is intended to be an contigious C-style array for memory reservation
 };
 
 /**
@@ -40,7 +40,7 @@ union Block final {
  * @tparam BlockType The type that represents block that will be mapped on raw memory.
  */
 template<typename BlockType>
-using MemoryRegionType = std::unique_ptr<BlockType[]>;
+using MemoryRegionType = std::unique_ptr<BlockType[]>; // NOLINT: it is intended to be an contigious C-style array
 
 /**
  * @brief Factory function for creating MemoryRegions.
@@ -53,8 +53,8 @@ using MemoryRegionType = std::unique_ptr<BlockType[]>;
  * @see Block
  */
 template<typename BlockType>
-[[nodiscard]] auto MakeRegion(std::size_t size) -> MemoryRegionType<BlockType> {
-  return std::make_unique<BlockType[]>(size);
+[[nodiscard]] auto MakeRegion(std::size_t const size) -> MemoryRegionType<BlockType> {
+  return std::make_unique<BlockType[]>(size); // NOLINT: it is intended to be an contigious C-style array
 }
 
 /**
@@ -74,9 +74,9 @@ requires (requires(BlockType block) {
 } && std::conjunction_v<std::negation<std::is_pointer<BlockType>>, std::negation<std::is_reference<BlockType>>>)
 class [[nodiscard]] FreeList {
  public:
-  using block_type = BlockType;
-  using block_pointer = block_type*;
-  using BlockPointer = block_pointer;
+  using block_type = BlockType; // NOLINT: std like alias for block type
+  using block_pointer = block_type*; // NOLINT: std like alias for block pointer type
+  using BlockPointer = block_pointer; // NOLINT
 
   FreeList() noexcept = default;
 
@@ -120,7 +120,7 @@ class [[nodiscard]] FreeList {
    */
   [[nodiscard]] auto Pop() noexcept -> BlockPointer {
     assert(free_blocks_);
-    BlockPointer block{free_blocks_};
+    BlockPointer const block{free_blocks_};
     free_blocks_ = free_blocks_->next_;
     return block;
   }
@@ -152,43 +152,14 @@ class [[nodiscard]] FreeList {
 };
 
 /**
- * @brief The base class that represents generic interface.
- * @internal
- */
-class MemoryPoolBase {
- public:
-  /**
-   * @brief Returns allocated fixed size block.
-   * @internal
-   * @public
-   *
-   * @throws `std::bad_alloc` if allocation fails.
-   *
-   * @return void* The pointer to the fixed size block.
-   */
-  [[nodiscard]] virtual auto Allocate() -> void* = 0;
-
-  /**
-   * @brief Memory to return to the memory pool.
-   * @internal
-   * @public
-   *
-   * @throws None (no-throw guarantee).
-   */
-  virtual auto Deallocate(void*) noexcept -> void = 0;
-
-  virtual ~MemoryPoolBase() = default;
-};
-
-/**
  * @brief Class that represents pool allocation strategy with fixed size blocks.
  *
  * @tparam BlockSize The block size that will be used for pool creation.
- * @tparam BlockPerRegion The number of blocks that one pool will contain.
+ * @tparam BlocksPerRegion The number of blocks that one pool will contain.
  */
 template<std::size_t BlockSize, std::size_t BlocksPerRegion>
 requires (((BlockSize & 1) == 0) && BlockSize > 0 && BlocksPerRegion > 0)
-class [[nodiscard]] PoolMemoryResource : virtual public MemoryResource {
+class [[nodiscard]] PoolMemoryResource : virtual public AbstractMemoryResource {
   using BlockType = Block<BlockSize>;
 
   static constexpr std::size_t kInitialPoolCount{5};
@@ -225,11 +196,15 @@ class [[nodiscard]] PoolMemoryResource : virtual public MemoryResource {
     }
   }
 
+  PoolMemoryResource(PoolMemoryResource const&) = delete;
+
   PoolMemoryResource(PoolMemoryResource&&) noexcept = default;
+
+  ~PoolMemoryResource() override = default;
 
  private:
   /**
-   * @brief Constructs new memory region and maps each block in signly-linked list.
+   * @brief Constructs new memory region and maps each block in singly-linked list.
    * @internal
    * @private
    *
@@ -240,9 +215,9 @@ class [[nodiscard]] PoolMemoryResource : virtual public MemoryResource {
   [[nodiscard]] static auto NewRegion() -> MemoryRegionType<BlockType> {
     auto region{MakeRegion<BlockType>(BlocksPerRegion)};
     for (std::size_t i{1}; i < BlocksPerRegion; ++i) {
-      region[i].next_ = &region[i - 1];
+      region[i].next_ = &region[i - 1]; // NOLINT: union can only contain POD
     }
-    region[BlocksPerRegion - 1].next_ = nullptr;
+    region[BlocksPerRegion - 1].next_ = nullptr; // NOLINT: union can only contain POD
     return region;
   }
 
@@ -305,6 +280,8 @@ class [[nodiscard]] PoolMemoryResource : virtual public MemoryResource {
     return false;
   }
 
+  auto operator=(PoolMemoryResource const&) -> PoolMemoryResource& = delete;
+
   auto operator=(PoolMemoryResource&&) noexcept -> PoolMemoryResource& = default;
 
  private:
@@ -326,6 +303,7 @@ class [[nodiscard]] PoolAllocator {
   friend class PoolAllocator;
 
  public:
+  // NOLINTBEGIN
   using value_type = T;
   using size_type = std::size_t;
   using difference_type = std::ptrdiff_t;
@@ -333,15 +311,16 @@ class [[nodiscard]] PoolAllocator {
   using propagate_on_container_move_assignment = std::true_type;
   using propagate_on_container_copy_construction = std::true_type;
   using propagate_on_container_swap = std::true_type;
+  // NOLINTEND
 
   PoolAllocator() noexcept = default;
 
   /**
-   * @brief Parametrisized constructor for operating on pool instance.
+   * @brief Parametrized constructor for operating on pool instance.
    * @public
    *
    * @tparam BlockSize The block size that will be used for pool creation.
-   * @tparam BlockPerRegion The number of blocks that one pool will contain.
+   * @tparam BlocksPerRegion The number of blocks that one pool will contain.
    *
    * @param[in] pool_resource Memory pool to allocate from.
    */
@@ -368,7 +347,7 @@ class [[nodiscard]] PoolAllocator {
    *
    * @return `nullptr` if `n` is equal to zero, pointer to the requested memory otherwise.
    */
-  [[nodiscard]] auto allocate(const size_type n) -> value_type* {
+  [[nodiscard]] auto allocate(const size_type n) -> value_type* { // NOLINT
     return reinterpret_cast<value_type*>(pool_resource_->Allocate(n * sizeof(value_type)));
   }
 
@@ -384,7 +363,7 @@ class [[nodiscard]] PoolAllocator {
    * @warning **Undefined Behaviour** if:
    *   - ptr does not belong to the underlying memory pool.
    */
-  auto deallocate(value_type* const ptr, const size_type n) noexcept -> void {
+  auto deallocate(value_type* const ptr, const size_type n) noexcept -> void { // NOLINT
     assert(pool_resource_);
     if (ptr) [[likely]] {
       pool_resource_->Deallocate(ptr, n * sizeof(value_type));
