@@ -167,7 +167,7 @@ class [[nodiscard]] PoolMemoryResource : virtual public AbstractMemoryResource {
  public:
   PoolMemoryResource() = default;
 
-  explicit PoolMemoryResource(const std::size_t region_count, MemoryResource* resource) : regions_(region_count) {
+  explicit PoolMemoryResource(const std::size_t region_count, AbstractMemoryResource* resource) : regions_(region_count) {
     if (resource) {
       upstream_resource_ = resource;
     }
@@ -184,12 +184,12 @@ class [[nodiscard]] PoolMemoryResource : virtual public AbstractMemoryResource {
     constexpr std::size_t kLastBlock{BlocksPerRegion - 1};
     const std::size_t last_memory_region{region_count - 1};
     for (std::size_t i{}; i < last_memory_region; ++i) {
-      regions_[i][kLastBlock].next_ = regions_[i + 1].get();
+      regions_[i][kLastBlock].next_ = regions_[i + 1].get(); // NOLINT
     }
   }
 
   explicit PoolMemoryResource(
-    MemoryResource* upstream_resource
+    AbstractMemoryResource* upstream_resource
   ) noexcept(std::is_nothrow_default_constructible_v<decltype(regions_)>) {
     if (upstream_resource) [[likely]] {
       upstream_resource_ = upstream_resource;
@@ -272,7 +272,7 @@ class [[nodiscard]] PoolMemoryResource : virtual public AbstractMemoryResource {
     free_list_.Clear();
   }
 
-  [[nodiscard]] auto IsEqual(const MemoryResource& memory_resource) const noexcept -> bool override {
+  [[nodiscard]] auto IsEqual(const AbstractMemoryResource& memory_resource) const noexcept -> bool override {
     if (const PoolMemoryResource* pool_resource{dynamic_cast<const PoolMemoryResource*>(&memory_resource)};
         pool_resource) {
       return this == pool_resource;
@@ -287,7 +287,7 @@ class [[nodiscard]] PoolMemoryResource : virtual public AbstractMemoryResource {
  private:
   std::vector<MemoryRegionType<BlockType>> regions_;
   FreeList<BlockType> free_list_;
-  MemoryResource* upstream_resource_{NewMemoryResource::Instance()};
+  AbstractMemoryResource* upstream_resource_{NewMemoryResource::Instance()};
 };
 
 /**
@@ -325,7 +325,7 @@ class [[nodiscard]] PoolAllocator {
    * @param[in] pool_resource Memory pool to allocate from.
    */
   template<std::size_t BlockSize, std::size_t BlocksPerRegion>
-  PoolAllocator(PoolMemoryResource<BlockSize, BlocksPerRegion>* const pool_resource) noexcept
+  explicit PoolAllocator(PoolMemoryResource<BlockSize, BlocksPerRegion>* const pool_resource) noexcept
     : pool_resource_{pool_resource} { }
 
   template<typename U>
@@ -355,7 +355,7 @@ class [[nodiscard]] PoolAllocator {
    * @brief Returns memory to the underlying memory pool.
    * @public
    *
-   * @param[in] ptr The pointer previosly allocated by `PoolAllocator`.
+   * @param[in] ptr The pointer previously allocated by `PoolAllocator`.
    * @param[in] n The number of blocks to deallocate (This value is ignored).
    *
    * @throws None (no-throw guarantee).
@@ -379,7 +379,7 @@ class [[nodiscard]] PoolAllocator {
    *
    * @return `MemoryPoolBase*` The pointer to the underlying memory pool.
    */
-  [[nodiscard]] auto GetPool() const noexcept -> MemoryResource* { return pool_resource_; }
+  [[nodiscard]] auto GetPool() const noexcept -> AbstractMemoryResource* { return pool_resource_; }
 
  public:
   auto operator=(const PoolAllocator& other) noexcept -> PoolAllocator& = default;
@@ -397,7 +397,7 @@ class [[nodiscard]] PoolAllocator {
   }
 
  private:
-  MemoryResource* pool_resource_{nullptr};
+  AbstractMemoryResource* pool_resource_{nullptr};
 };
 
 }  // namespace lab::memory
