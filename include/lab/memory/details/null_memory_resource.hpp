@@ -9,7 +9,6 @@ class [[nodiscard]] NullMemoryResource : public AbstractMemoryResource {
 
  protected:
   NullMemoryResource() noexcept = default;
-  ~NullMemoryResource() = default;
 
  public:
   using size_type = Base::size_type;
@@ -19,6 +18,7 @@ class [[nodiscard]] NullMemoryResource : public AbstractMemoryResource {
 
   NullMemoryResource(const NullMemoryResource&) = delete;
   NullMemoryResource(NullMemoryResource&&) noexcept = delete;
+  ~NullMemoryResource() override = default;
 
   auto operator=(const NullMemoryResource&) -> NullMemoryResource& = delete;
   auto operator=(NullMemoryResource&&) noexcept -> NullMemoryResource& = delete;
