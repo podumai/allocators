@@ -4,21 +4,21 @@
 
 namespace lab::memory {
 
-class [[nodiscard]] NewMemoryResource : public MemoryResource {
-  using Base = MemoryResource;
+class [[nodiscard]] NewMemoryResource : public AbstractMemoryResource {
+  using Base = AbstractMemoryResource;
 
  protected:
   NewMemoryResource() = default;
-  ~NewMemoryResource() = default;
 
  public:
-  using size_type = Base::size_type;
+  using size_type = Base::size_type; // NOLINT: std like alias for compatibility
   using SizeType = Base::SizeType;
-  using difference_type = Base::difference_type;
+  using difference_type = Base::difference_type; // NOLINT: std like alias for compatibility
   using DifferenceType = Base::DifferenceType;
 
   NewMemoryResource(const NewMemoryResource&) = delete;
   NewMemoryResource(NewMemoryResource&&) noexcept = delete;
+  ~NewMemoryResource() override = default;
 
   auto operator=(const NewMemoryResource&) -> NewMemoryResource& = delete;
   auto operator=(NewMemoryResource&&) noexcept -> NewMemoryResource& = delete;
@@ -27,7 +27,7 @@ class [[nodiscard]] NewMemoryResource : public MemoryResource {
 
   [[nodiscard]] auto Allocate(SizeType bytes) -> void* override;
 
-  auto Deallocate(void* ptr, const SizeType bytes) -> void override;
+  auto Deallocate(void* ptr, SizeType bytes) -> void override;
 
   [[nodiscard]] auto IsEqual(const Base& other) const noexcept -> bool override;
 };
