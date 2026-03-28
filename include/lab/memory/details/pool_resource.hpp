@@ -196,7 +196,11 @@ class [[nodiscard]] PoolMemoryResource : virtual public AbstractMemoryResource {
     }
   }
 
+  PoolMemoryResource(PoolMemoryResource const&) = delete;
+
   PoolMemoryResource(PoolMemoryResource&&) noexcept = default;
+
+  ~PoolMemoryResource() override = default;
 
  private:
   /**
@@ -275,6 +279,8 @@ class [[nodiscard]] PoolMemoryResource : virtual public AbstractMemoryResource {
     }
     return false;
   }
+
+  auto operator=(PoolMemoryResource const&) -> PoolMemoryResource& = delete;
 
   auto operator=(PoolMemoryResource&&) noexcept -> PoolMemoryResource& = default;
 
