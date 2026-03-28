@@ -75,8 +75,8 @@ requires (requires(BlockType block) {
 class [[nodiscard]] FreeList {
  public:
   using block_type = BlockType;
-  using block_pointer = block_type*;
-  using BlockPointer = block_pointer;
+  using block_pointer = block_type*; // NOLINT: std like alias for block type
+  using BlockPointer = block_pointer; // NOLINT
 
   FreeList() noexcept = default;
 
