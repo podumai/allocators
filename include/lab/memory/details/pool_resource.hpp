@@ -53,8 +53,8 @@ using MemoryRegionType = std::unique_ptr<BlockType[]>;
  * @see Block
  */
 template<typename BlockType>
-[[nodiscard]] auto MakeRegion(std::size_t size) -> MemoryRegionType<BlockType> {
-  return std::make_unique<BlockType[]>(size);
+[[nodiscard]] auto MakeRegion(std::size_t const size) -> MemoryRegionType<BlockType> {
+  return std::make_unique<BlockType[]>(size); // NOLINT: it is intended to be an contigious C-style array
 }
 
 /**
