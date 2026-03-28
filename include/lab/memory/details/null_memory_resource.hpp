@@ -11,9 +11,9 @@ class [[nodiscard]] NullMemoryResource : public AbstractMemoryResource {
   NullMemoryResource() noexcept = default;
 
  public:
-  using size_type = Base::size_type;
+  using size_type = Base::size_type; // NOLINT: std like alias for compatibility
   using SizeType = Base::SizeType;
-  using difference_type = Base::difference_type;
+  using difference_type = Base::difference_type; // NOLINT: std like alias for compatibility
   using DifferenceType = Base::DifferenceType;
 
   NullMemoryResource(const NullMemoryResource&) = delete;
