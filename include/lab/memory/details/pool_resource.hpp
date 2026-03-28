@@ -74,8 +74,8 @@ requires (requires(BlockType block) {
 } && std::conjunction_v<std::negation<std::is_pointer<BlockType>>, std::negation<std::is_reference<BlockType>>>)
 class [[nodiscard]] FreeList {
  public:
-  using block_type = BlockType;
-  using block_pointer = block_type*; // NOLINT: std like alias for block type
+  using block_type = BlockType; // NOLINT: std like alias for block type
+  using block_pointer = block_type*; // NOLINT: std like alias for block pointer type
   using BlockPointer = block_pointer; // NOLINT
 
   FreeList() noexcept = default;
