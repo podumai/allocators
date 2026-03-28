@@ -379,7 +379,7 @@ class [[nodiscard]] PoolAllocator {
    *
    * @return `MemoryPoolBase*` The pointer to the underlying memory pool.
    */
-  [[nodiscard]] auto GetPool() const noexcept -> MemoryResource* { return pool_resource_; }
+  [[nodiscard]] auto GetPool() const noexcept -> AbstractMemoryResource* { return pool_resource_; }
 
  public:
   auto operator=(const PoolAllocator& other) noexcept -> PoolAllocator& = default;
@@ -397,7 +397,7 @@ class [[nodiscard]] PoolAllocator {
   }
 
  private:
-  MemoryResource* pool_resource_{nullptr};
+  AbstractMemoryResource* pool_resource_{nullptr};
 };
 
 }  // namespace lab::memory
