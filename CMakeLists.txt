@@ -1,14 +1,27 @@
 cmake_minimum_required(VERSION 3.30)
 
-file(READ "${CMAKE_SOURCE_DIR}/VERSION" PROJECT_VERSION)
-string(STRIP "${PROJECT_VERSION}" PROJECT_VERSION)
+find_package(Git QUIET)
+if(Git_FOUND)
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} describe --tags --abbrev=0
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_TAG
+    OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+
+  if(GIT_TAG)
+    string(SUBSTRING ${GIT_TAG} 1 -1 PROJECT_VERSION)
+  endif()
+endif()
+
+if(NOT PROJECT_VERSION)
+  set(PROJECT_VERSION "1.0.0")
+endif()
 
 project(
   Allocators
   VERSION ${PROJECT_VERSION}
   LANGUAGES CXX
-  DESCRIPTION "Laboratory work about allocators"
-)
+  DESCRIPTION "Laboratory work about allocators")
 
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 set(CMAKE_CXX_STANDARD 23)
@@ -24,6 +37,8 @@ include(CTest)
 include(Catch)
 
 add_subdirectory(app)
-add_subdirectory(tests)
+if(BUILD_TESTING)
+  add_subdirectory(tests)
+endif()
 add_subdirectory(examples)
 add_subdirectory(src)
