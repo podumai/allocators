@@ -14,8 +14,13 @@ auto Task2() -> void;
 }  // namespace lab
 
 auto main() -> int {
-  lab::Task1();
-  lab::Task2();
+  try {
+    lab::Task1();
+    lab::Task2();
+  } catch (std::exception const& error) {
+    std::cerr << error.what() << '\n';
+    return 1;
+  }
   return 0;
 }
 
