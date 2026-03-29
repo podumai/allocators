@@ -135,14 +135,22 @@ jobs:
           ninja: true
           conan: true
 
-      - name: 'Determine conan2 profile'
+      - name: '[Conan2][Linux] Determine conan2 profile'
+        if: runner.os == 'Linux'
         run: |
-          OS=$(echo "${{ runner.os }}" | awk '{ print tolower($0) }')
-          
-          if [[ "${{ github.event_name }}" == "push" ]]; then
-            echo "CONAN_PROFILE=./profiles/${OS}-conan-profile-release" >> $GITHUB_ENV
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            echo "CONAN_PROFILE=./profiles/${{ needs.config.outputs.linux-conan-profile-release }}" >> $GITHUB_ENV
           else
-            echo "CONAN_PROFILE=./profiles/${OS}-conan-profile-debug" >> $GITHUB_ENV
+            echo "CONAN_PROFILE=./profiles/${{ needs.config.outputs.linux-conan-profile-debug }}" >> $GITHUB_ENV
+          fi
+
+      - name: '[Conan2][macOS] Determine conan2 profile'
+        if: runner.os == 'macOS'
+        run: |
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            echo "CONAN_PROFILE=./profiles/${{ needs.config.outputs.macos-conan-profile-release }}" >> $GITHUB_ENV
+          else
+            echo "CONAN_PROFILE=./profiles/${{ needs.config.outputs.macos-conan-profile-debug }}" >> $GITHUB_ENV
           fi
 
       - name: '[Conan2] Install project dependencies'
