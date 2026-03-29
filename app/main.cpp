@@ -15,34 +15,19 @@
 namespace {
 
 constexpr int kBytesToAllocate{64};
+constexpr std::size_t kElementsCount{10};
 
 }
 
-class [[nodiscard]] ScopedTimer {
- public:
-  ~ScopedTimer() {
-    try {
-      std::println(
-        "{}", std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - start_)
-      );
-    } catch (...) {
-    }
-  }
-
- private:
-  std::chrono::steady_clock::time_point start_{std::chrono::steady_clock::now()};
-};
-
 auto main() -> int {
   try {
-    lab::memory::PoolMemoryResource<kBytesToAllocate, 10> pool_resource{lab::memory::NewMemoryResource::Instance()};
+    lab::memory::PoolMemoryResource<kBytesToAllocate, kElementsCount> pool_resource{lab::memory::NewMemoryResource::Instance()};
     lab::memory::PoolAllocator<int> pool_allocator{&pool_resource};
-    ScopedTimer timer{};
-    int* arr{pool_allocator.allocate(10)};
-    std::iota(arr, arr + 10, 0);
-    std::for_each(arr, arr + 10, [counter = 0, arr](int& value) mutable -> void {
-      arr[counter] = counter;
-      std::println("arr[{}] = {}", counter, arr[counter]);
+    int* arr{pool_allocator.allocate(kElementsCount)};
+    std::iota(arr, arr + kElementsCount, 0); // NOLINT
+    std::for_each(arr, arr + kElementsCount, [counter = 0, arr](int& value) mutable -> void { // NOLINT
+      arr[counter] = counter; // NOLINT
+      std::println("arr[{}] = {}", counter, arr[counter]); // NOLINT
       ++counter;
     });
   } catch (const std::exception& error) {
