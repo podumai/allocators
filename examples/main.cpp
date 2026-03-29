@@ -59,11 +59,10 @@ auto GenerateMap(auto& map) -> void {
 
 auto Task1() -> void {
   {
-    std::map<int, int> m;
-
-    GenerateMap(m);
+    std::map<int, int> map{};
+    GenerateMap(map);
     std::println("Task1[Standard Allocator]");
-    PrintMap(m);
+    PrintMap(map);
   }
   {
     using NodeType = std::map<int, int>::node_type;
