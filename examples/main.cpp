@@ -34,7 +34,9 @@ auto PrintMap(const auto& map) -> void {
   }
 }
 
-constexpr std::array<std::pair<int, int>, 10> kFactorialValues{
+constexpr std::size_t kTestValuesCount{10};
+
+constexpr std::array<std::pair<int, int>, kTestValuesCount> kFactorialValues{
   std::make_pair(0, 1),
   std::make_pair(1, 1),
   std::make_pair(2, 2),
@@ -68,7 +70,7 @@ auto Task1() -> void {
     constexpr std::size_t kNodeSize{sizeof(NodeType)};
     using ValueType = std::map<int, int>::value_type;
 
-    lab::memory::PoolMemoryResource<kNodeSize, 10> pool;
+    lab::memory::PoolMemoryResource<kNodeSize, kTestValuesCount> pool;
     lab::memory::PoolAllocator<ValueType> allocator{&pool};
     std::map<int, int, std::less<>, decltype(allocator)> map{allocator};
     GenerateMap(map);
@@ -108,7 +110,7 @@ auto Task2() -> void {
   {
     using NodeType = lab::containers::details::ListNode<int>;
     constexpr std::size_t kNodeTypeSize{sizeof(NodeType)};
-    lab::memory::PoolMemoryResource<kNodeTypeSize, 10> pool;
+    lab::memory::PoolMemoryResource<kNodeTypeSize, kTestValuesCount> pool;
     lab::memory::PoolAllocator<int> allocator{&pool};
     lab::containers::List<int, decltype(allocator)> list{allocator};
 
