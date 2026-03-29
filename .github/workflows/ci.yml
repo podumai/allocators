@@ -150,14 +150,19 @@ jobs:
 
       - name: 'Determine cmake preset'
         run: |
-          if [[ "${{ github.event_name }}" == "push" ]]; then
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
             echo "CMAKE_PRESET=conan-release" >> $GITHUB_ENV
           else
             echo "CMAKE_PRESET=conan-debug" >> $GITHUB_ENV
           fi
 
       - name: '[CMake] Configure project'
-        run: cmake --preset ${{ env.CMAKE_PRESET }}
+        run: |
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            cmake --preset ${{ env.CMAKE_PRESET }} -DCI_CD_RELEASE=ON
+          else
+            cmake --preset ${{ env.CMAKE_PRESET }}
+          fi
 
       - name: '[CMake] Build project'
         run: cmake --build --preset ${{ env.CMAKE_PRESET }}
@@ -220,7 +225,7 @@ jobs:
 
       - name: 'Find ctest preset'
         run: |
-          if [[ "${{ github.event_name }}" == "push" ]]; then
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
             echo "CTEST_PRESET=conan-release" >> $GITHUB_ENV
           else
             echo "CTEST_PRESET=conan-debug" >> $GITHUB_ENV
