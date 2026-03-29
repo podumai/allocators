@@ -70,11 +70,10 @@ auto Task1() -> void {
 
     lab::memory::PoolMemoryResource<kNodeSize, 10> pool;
     lab::memory::PoolAllocator<ValueType> allocator{&pool};
-    std::map<int, int, std::less<>, decltype(allocator)> m{allocator};
-
-    GenerateMap(m);
+    std::map<int, int, std::less<>, decltype(allocator)> map{allocator};
+    GenerateMap(map);
     std::println("Task1[Custom Allocator]");
-    PrintMap(m);
+    PrintMap(map);
   }
 }
 
