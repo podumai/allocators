@@ -64,12 +64,12 @@ auto Task1() -> void {
     PrintMap(m);
   }
   {
-    using node_type = std::map<int, int>::node_type;
-    constexpr std::size_t kNodeSize{sizeof(node_type)};
-    using value_type = std::map<int, int>::value_type;
+    using NodeType = std::map<int, int>::node_type;
+    constexpr std::size_t kNodeSize{sizeof(NodeType)};
+    using ValueType = std::map<int, int>::value_type;
 
     lab::memory::PoolMemoryResource<kNodeSize, 10> pool;
-    lab::memory::PoolAllocator<value_type> allocator{&pool};
+    lab::memory::PoolAllocator<ValueType> allocator{&pool};
     std::map<int, int, std::less<int>, decltype(allocator)> m{allocator};
 
     GenerateMap(m);
