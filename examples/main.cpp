@@ -14,8 +14,13 @@ auto Task2() -> void;
 }  // namespace lab
 
 auto main() -> int {
-  lab::Task1();
-  lab::Task2();
+  try {
+    lab::Task1();
+    lab::Task2();
+  } catch (std::exception const& error) {
+    std::cerr << error.what() << '\n';
+    return 1;
+  }
   return 0;
 }
 
@@ -29,7 +34,9 @@ auto PrintMap(const auto& map) -> void {
   }
 }
 
-constexpr std::array<std::pair<int, int>, 10> kFactorialValues{
+constexpr std::size_t kTestValuesCount{10};
+
+constexpr std::array<std::pair<int, int>, kTestValuesCount> kFactorialValues{
   std::make_pair(0, 1),
   std::make_pair(1, 1),
   std::make_pair(2, 2),
@@ -52,24 +59,22 @@ auto GenerateMap(auto& map) -> void {
 
 auto Task1() -> void {
   {
-    std::map<int, int> m;
-
-    GenerateMap(m);
+    std::map<int, int> map{};
+    GenerateMap(map);
     std::println("Task1[Standard Allocator]");
-    PrintMap(m);
+    PrintMap(map);
   }
   {
-    using node_type = std::map<int, int>::node_type;
-    constexpr std::size_t kNodeSize{sizeof(node_type)};
-    using value_type = std::map<int, int>::value_type;
+    using NodeType = std::map<int, int>::node_type;
+    constexpr std::size_t kNodeSize{sizeof(NodeType)};
+    using ValueType = std::map<int, int>::value_type;
 
-    lab::memory::PoolMemoryResource<kNodeSize, 10> pool;
-    lab::memory::PoolAllocator<value_type> allocator{&pool};
-    std::map<int, int, std::less<int>, decltype(allocator)> m{allocator};
-
-    GenerateMap(m);
+    lab::memory::PoolMemoryResource<kNodeSize, kTestValuesCount> pool;
+    lab::memory::PoolAllocator<ValueType> allocator{&pool};
+    std::map<int, int, std::less<>, decltype(allocator)> map{allocator};
+    GenerateMap(map);
     std::println("Task1[Custom Allocator]");
-    PrintMap(m);
+    PrintMap(map);
   }
 }
 
@@ -104,7 +109,7 @@ auto Task2() -> void {
   {
     using NodeType = lab::containers::details::ListNode<int>;
     constexpr std::size_t kNodeTypeSize{sizeof(NodeType)};
-    lab::memory::PoolMemoryResource<kNodeTypeSize, 10> pool;
+    lab::memory::PoolMemoryResource<kNodeTypeSize, kTestValuesCount> pool;
     lab::memory::PoolAllocator<int> allocator{&pool};
     lab::containers::List<int, decltype(allocator)> list{allocator};
 
