@@ -19,3 +19,9 @@ target_link_libraries(
   PRIVATE
   LabMemory::LabMemory
 )
+set_target_properties(
+        Examples
+        PROPERTIES
+        OUTPUT_NAME "example"
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+)
