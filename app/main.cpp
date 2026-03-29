@@ -24,10 +24,10 @@ auto main() -> int {
     lab::memory::PoolMemoryResource<kBytesToAllocate, kElementsCount> pool_resource{lab::memory::NewMemoryResource::Instance()};
     lab::memory::PoolAllocator<int> pool_allocator{&pool_resource};
     int* arr{pool_allocator.allocate(kElementsCount)};
-    std::iota(arr, arr + kElementsCount, 0);
-    std::for_each(arr, arr + kElementsCount, [counter = 0, arr](int& value) mutable -> void {
-      arr[counter] = counter;
-      std::println("arr[{}] = {}", counter, arr[counter]);
+    std::iota(arr, arr + kElementsCount, 0); // NOLINT
+    std::for_each(arr, arr + kElementsCount, [counter = 0, arr](int& value) mutable -> void { // NOLINT
+      arr[counter] = counter; // NOLINT
+      std::println("arr[{}] = {}", counter, arr[counter]); // NOLINT
       ++counter;
     });
   } catch (const std::exception& error) {
