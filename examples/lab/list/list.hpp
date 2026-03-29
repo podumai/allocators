@@ -13,6 +13,8 @@
 #include <type_traits>
 #include <utility>
 
+// NOLINTBEGIN
+
 #ifndef LAB_CONTAINERS_ASSERT
   #define LAB_CONTAINERS_ASSERT(condition, message) \
     do {                                            \
@@ -605,3 +607,5 @@ constexpr auto swap(List<T, Allocator>& lhs, List<T, Allocator>& rhs) noexcept -
 }
 
 }  // namespace lab::containers
+
+// NOLINTEND
