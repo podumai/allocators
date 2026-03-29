@@ -11,7 +11,7 @@ constexpr std::size_t kBlocksPerRegion{5};
 
 TEST_CASE("PoolMemoryResource Constructor [Zero init regions]") {
   lab::memory::PoolMemoryResource<kBlockSize, kBlocksPerRegion> pool{};
-  std::array<void*, kBlocksPerRegion> pointers;
+  std::array<void*, kBlocksPerRegion> pointers{};
   for (void*& pointer : pointers) {
     pointer = pool.Allocate(kBlockSize);
     REQUIRE(pointer);
@@ -20,7 +20,7 @@ TEST_CASE("PoolMemoryResource Constructor [Zero init regions]") {
 
 TEST_CASE("PoolMemoryResource Constructor [Default Init regions]") {
   lab::memory::PoolMemoryResource<kBlockSize, kBlocksPerRegion> pool{};
-  std::array<void*, kBlocksPerRegion> pointers;
+  std::array<void*, kBlocksPerRegion> pointers{};
   for (auto& pointer : pointers) {
     pointer = pool.Allocate(kBlockSize);
     REQUIRE(pointer);
