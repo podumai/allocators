@@ -186,6 +186,9 @@ jobs:
           retention-days: 1
           overwrite: true
 
+      - name: '[Conan2] Find conan2 directory'
+        run: echo "CONAN_CONFIG_HOME=$(conan config home)" >> $GITHUB_ENV
+
       - name: 'Cache conan directories'
         uses: 'actions/cache@v5'
         with:
